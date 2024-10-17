@@ -10,6 +10,7 @@ const compression = require('compression');
 const server = require('./database/database');
 const user = require('./router/user.router');
 const follow = require('./router/follow.router');
+const post = require('./router/post.router');
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use(fileUpload());
 // / Routes
 app.use('/api/v1', user)
 app.use('/api/v1', follow)
+app.use('/api/v1', post)
 
 // Database connection
 server().then(() => {
