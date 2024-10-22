@@ -94,8 +94,6 @@ exports.getAllFollowing = async (req, res) => {
         // Allow the user to view their own following list
         if (id === currentUserId) {
             const following = await User.find({ _id: { $in: user.following } })
-                .populate("following")
-                .populate("followers");
             return res.status(200).json({ success: true, total: following.length, data: following });
         }
 
@@ -106,8 +104,6 @@ exports.getAllFollowing = async (req, res) => {
 
         // Fetch the following users
         const following = await User.find({ _id: { $in: user.following } })
-            .populate("following")
-            .populate("followers");
 
         res.status(200).json({ success: true, total: following.length, data: following });
     } catch (err) {
@@ -129,8 +125,6 @@ exports.getAllFollowers = async (req, res) => {
         // Allow the user to view their own followers list
         if (id === currentUserId) {
             const followers = await User.find({ _id: { $in: user.followers } })
-                .populate("following")
-                .populate("followers");
             return res.status(200).json({ success: true, total: followers.length, data: followers });
         }
 
@@ -141,8 +135,6 @@ exports.getAllFollowers = async (req, res) => {
 
         // Fetch the followers
         const followers = await User.find({ _id: { $in: user.followers } })
-            .populate("following")
-            .populate("followers");
 
         res.status(200).json({ success: true, total: followers.length, data: followers });
     } catch (err) {
