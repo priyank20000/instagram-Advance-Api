@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
         // maxlength: 160,
         required: false
     }, // done
-    post: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+    post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // mein samna vala ko follow keru uska deta
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], /// samna vala na mujha follow kiya hai uska data
     followRequests: [followRequestSchema],

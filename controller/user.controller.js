@@ -202,13 +202,71 @@ exports.profile = async (req, res) => {
 
 exports.getUser = async (req, res) => {
     try {
-        const user = await User.findById(req.body.id);
+        const currentUserId = req.user.id; // Get the current user's ID
+        const userIdToFetch = req.body.id; // Get the user ID to fetch
+
+        // Validate the user ID from the request body
+        if (!userIdToFetch) {
+            return res.status(400).json({ success: false, message: "User ID is required." });
+        }
+
+        const user = await User.findById(userIdToFetch)
+            .populate('followers')
+            .populate('following')
+            .populate('post');
+
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
+
+        // If the current user is viewing their own profile, return full details
+        if (currentUserId === userIdToFetch) {
+            return res.status(200).json({
+                success: true,
+                followers: user.followers ? user.followers.length : 0,
+                following: user.following ? user.following.length : 0,
+                posts: user.post ? user.post.length : 0,
+                data: user
+            });
+        }
+
+        // If the user is private
+        if (user.isPrivate) {
+            // Check if the current user's ID is in the user's followers
+            const isFollower = user.followers.some(follower => follower._id.toString() === currentUserId);
+
+            if (isFollower) {
+                // Follower, return full details
+                return res.status(200).json({
+                    success: true,
+                    followers: user.followers ? user.followers.length : 0,
+                    following: user.following ? user.following.length : 0,
+                    posts: user.post ? user.post.length : 0,
+                    data: user
+                });
+            } else {
+                // Not a follower, return limited details
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        username: user.username,
+                        bio: user.bio || "No bio available",
+                        profilePicture: user.profilePicture || "No profile picture available",
+                        followers: user.followers ? user.followers.length : 0,
+                        following: user.following ? user.following.length : 0,
+                        posts: user.post ? user.post.length : 0
+                    }
+                });
+            }
+        }
+
+        // If the user is public, return full user data
         res.status(200).json({
             success: true,
-            data: user
+            followers: user.followers ? user.followers.length : 0,
+            following: user.following ? user.following.length : 0,
+            posts: user.post ? user.post.length : 0,
+            data: user,
         });
     } catch (err) {
         console.error(err);
@@ -217,5 +275,11 @@ exports.getUser = async (req, res) => {
             message: "Internal server error"
         });
     }
-}; /// get user
+}; // get user
+
+
+
+
+
+
 
