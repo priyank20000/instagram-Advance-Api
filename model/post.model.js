@@ -58,6 +58,18 @@ const postSchema = new mongoose.Schema({
             type: String,
             default: false
         },
+        views: {
+            type: Number,
+            default: 0
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        },
+        updatedAt: {
+            type: Date,
+            default: Date.now
+        }
     }],
     isDeleted: {
         type: Boolean,

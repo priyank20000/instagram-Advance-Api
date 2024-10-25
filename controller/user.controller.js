@@ -5,6 +5,7 @@ const device = require('device');
 const fs = require('fs').promises;
 const path = require('path');
 const bcrypt = require('bcrypt');
+const Post = require("../model/post.model");
 
 exports.register = async (req, res) => {
     try {
@@ -117,6 +118,8 @@ exports.login =  async (req,res,next) =>{
     }
 }  ////// login
 
+//// logout 
+
 exports.profile = async (req, res) => {
     try {
         const { name, username, bio, socialMediaLinks } = req.body;
@@ -200,7 +203,7 @@ exports.profile = async (req, res) => {
     }
 }; /// profile
 
-exports.getUser = async (req, res) => {
+exports.getUserById = async (req, res) => {
     try {
         const currentUserId = req.user.id; // Get the current user's ID
         const userIdToFetch = req.body.id; // Get the user ID to fetch
@@ -218,14 +221,14 @@ exports.getUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
-
+        const postCount = await Post.countDocuments({ user: userIdToFetch });
         // If the current user is viewing their own profile, return full details
         if (currentUserId === userIdToFetch) {
             return res.status(200).json({
                 success: true,
                 followers: user.followers ? user.followers.length : 0,
                 following: user.following ? user.following.length : 0,
-                posts: user.post ? user.post.length : 0,
+                posts: postCount,
                 data: user
             });
         }
@@ -241,7 +244,7 @@ exports.getUser = async (req, res) => {
                     success: true,
                     followers: user.followers ? user.followers.length : 0,
                     following: user.following ? user.following.length : 0,
-                    posts: user.post ? user.post.length : 0,
+                    posts: postCount,
                     data: user
                 });
             } else {
@@ -249,12 +252,13 @@ exports.getUser = async (req, res) => {
                 return res.status(200).json({
                     success: true,
                     data: {
+                        name: user.name,
                         username: user.username,
                         bio: user.bio || "No bio available",
                         profilePicture: user.profilePicture || "No profile picture available",
                         followers: user.followers ? user.followers.length : 0,
                         following: user.following ? user.following.length : 0,
-                        posts: user.post ? user.post.length : 0
+                        posts: postCount
                     }
                 });
             }
@@ -265,7 +269,7 @@ exports.getUser = async (req, res) => {
             success: true,
             followers: user.followers ? user.followers.length : 0,
             following: user.following ? user.following.length : 0,
-            posts: user.post ? user.post.length : 0,
+            posts: postCount,
             data: user,
         });
     } catch (err) {

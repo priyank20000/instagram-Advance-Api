@@ -64,8 +64,7 @@ exports.createPost = async (req, res) => {
                 await existingPost.save();
                 res.status(200).json({
                     success: true,
-                    message: "Post updated successfully",
-                    data: existingPost
+                    message: "Post created successfully",
                 });
             } else {
                 // Create a new post if no existing post is found
@@ -80,13 +79,9 @@ exports.createPost = async (req, res) => {
                     }]
                 });
 
-                user.post.push(newPost._id);
-                await user.save();
-
                 res.status(201).json({
                     success: true,
-                    message: "Post created successfully",
-                    data: newPost
+                    message: "Post created successfully"
                 });
             }
         } else {
@@ -96,6 +91,135 @@ exports.createPost = async (req, res) => {
         console.error(error);
         return res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-};
+}
 
+exports.getAllPosts = async (req, res) => {
+    try {
+        const { id } = req.body;
+        const currentUserId = req.user.id;
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found!" });
+        }
+
+        const posts = await Post.find({ user: user._id });
+        if (!posts) {
+            return res.status(404).json({ success: false, message: "Posts not found!" });
+        }
+        const imagePosts = posts.map(post => ({
+            ...post.toObject(), // Convert Mongoose document to plain object
+            post: post.post.filter(item => item.mediaType === 'image') // Filter for image mediaType
+        }))
+        if (id === currentUserId) {
+            // const imagePosts = posts.flatMap(post => 
+            //     post.post.filter(item => item.mediaType === 'image')
+            // );
+            
+            return res.status(200).json({
+                success: true,
+                data: imagePosts
+            });
+        }
+        // If the user is private, check if the current user is a follower
+        if (user.isPrivate && !user.followers.includes(currentUserId)) {
+            return res.status(403).json({ success: false, message: "This user has a private account. You need to follow them to see their Posts." });
+        }
+
+        res.status(200).json({ success: true, data: imagePosts });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+}
+
+exports.getAllReels = async (req, res) => {
+    try {
+        const { id } = req.body;
+        const currentUserId = req.user.id;
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found!" });
+        }
+
+        const posts = await Post.find({ user: user._id });
+        if (!posts) {
+            return res.status(404).json({ success: false, message: "Posts not found!" });
+        }
+        const reelPosts = posts.map(post => ({
+            ...post.toObject(), // Convert Mongoose document to plain object
+            post: post.post.filter(item => item.mediaType === 'reel') // Filter for image mediaType
+        }))
+        if (id === currentUserId) {
+            // const reelPosts = posts.flatMap(post => 
+            //     post.post.filter(item => item.mediaType === 'reel')
+            // );
+            
+            return res.status(200).json({
+                success: true,
+                data: reelPosts
+            });
+        }
+        // If the user is private, check if the current user is a follower
+        if (user.isPrivate && !user.followers.includes(currentUserId)) {
+            return res.status(403).json({ success: false, message: "This user has a private account. You need to follow them to see their Reels." });
+        }
+
+        res.status(200).json({ success: true, data: reelPosts });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+}
+
+exports.getPost = async (req, res) => {
+    const { postId, itemId } = req.body; // Assume itemId is passed as a URL parameter
+    if (!postId || !itemId) {
+        return res.status(400).json({ success: false, message: 'Missing postId or itemId' });
+    }
+
+    try {
+        const currentUserId = req.user.id;
+
+        // Find the post's user
+        const postUser = await Post.findById(postId).populate('user');
+        if (!postUser) {
+            return res.status(404).json({ success: false, message: "Post not found!" });
+        }
+
+        // Check if the post's user is private and if the current user is not a follower
+        if (postUser.user.isPrivate && !postUser.user.followers.includes(currentUserId)) {
+            return res.status(403).json({ success: false, message: "This user has a private account. You need to follow them to see this post." });
+        }
+
+        // Update the specific item's views count in the post array
+        const result = await Post.updateOne(
+            { _id: postId, 'post._id': itemId },
+            { $inc: { 'post.$.views': 1 } } // Increment the views for the specific item
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ success: false, message: "Item not found in the post!" });
+        }
+
+        // Fetch the updated item to return
+        const updatedPost = await Post.findById(postId)
+        const updatedItem = updatedPost.post.find(item => item._id.toString() === itemId);
+
+        // Return the specific item along with userId and itemId
+        res.status(200).json({
+            success: true,
+            data: {
+                userId: postUser.user._id, // Include userId
+                itemId: updatedItem._id,    // Include itemId
+                item: updatedItem,             // Include the updated item details
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+};   // haf kam hua hai
+
+
+/////////
 

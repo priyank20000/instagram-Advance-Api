@@ -1,7 +1,7 @@
 const app = require('express');
 const router = app.Router()
 //////////////////////////////
-const { register, profile, login, getUser } = require('../controller/user.controller');
+const { register, profile, login, getUserById } = require('../controller/user.controller');
 const { isAuthenticatedUser } = require('../middleware/auth');
 
 
@@ -12,6 +12,6 @@ router.post("/login", login);
 router.post("/profile", isAuthenticatedUser, profile)
 
 /////////////////////////////////
-router.get("/getUser", isAuthenticatedUser, getUser )
+router.get("/getUserById", isAuthenticatedUser, getUserById )
 
 module.exports  = router;
