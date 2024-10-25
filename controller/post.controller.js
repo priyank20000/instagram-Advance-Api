@@ -221,5 +221,68 @@ exports.getPost = async (req, res) => {
 };   // haf kam hua hai
 
 
-/////////
+///////// like 
+exports.likePost = async (req, res) => {
+    try {
+        const { postId } = req.body; // Get post ID from the request body
+        const userId = req.user.id; // Get the ID of the user liking/unliking the post
+
+        // Validate input
+        if (!postId) {
+            return res.status(400).json({ success: false, message: "Post ID is required." });
+        }
+
+        // Find the post by ID
+        const post = await Post.findOne({ "post._id": postId });
+        if (!post) {
+            return res.status(404).json({ success: false, message: "Post not found!" });
+        }
+
+        // Find the specific post item within the post array
+        const postItem = post.post.id(postId);
+
+        // Check if the user has already liked the post
+        const isLiked = postItem.likes && postItem.likes.includes(userId);
+
+        // If already liked, unlike the post
+        if (isLiked) {
+            postItem.likes = postItem.likes.filter(like => like.toString() !== userId);
+            await post.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "Post unliked successfully",
+                likesCount: postItem.likes.length // Return the updated likes count
+            });
+        }
+
+        // If not liked, check visibility rules for private accounts
+        if (postItem.visibility === 'private') {
+            const isFollower = post.user.followers.includes(userId);
+            if (!isFollower) {
+                return res.status(403).json({ success: false, message: "You must follow this user to like their post." });
+            }
+        }
+
+        // Add the user to the likes array
+        if (!postItem.likes) {
+            postItem.likes = []; // Initialize likes array if it doesn't exist
+        }
+        postItem.likes.push(userId);
+        await post.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Post liked successfully",
+            likesCount: postItem.likes.length // Return the updated likes count
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+};
+
+
+
 
